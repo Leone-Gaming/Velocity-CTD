@@ -37,15 +37,10 @@ import com.velocitypowered.api.util.Favicon;
 import com.velocitypowered.api.util.GameProfile;
 import com.velocitypowered.api.util.ProxyVersion;
 import com.velocitypowered.proxy.command.VelocityCommandManager;
-import com.velocitypowered.proxy.command.builtin.AlertCommand;
-import com.velocitypowered.proxy.command.builtin.AlertRawCommand;
 import com.velocitypowered.proxy.command.builtin.CallbackCommand;
-import com.velocitypowered.proxy.command.builtin.FindCommand;
 import com.velocitypowered.proxy.command.builtin.GlistCommand;
 import com.velocitypowered.proxy.command.builtin.HubCommand;
-import com.velocitypowered.proxy.command.builtin.PingCommand;
 import com.velocitypowered.proxy.command.builtin.SendCommand;
-import com.velocitypowered.proxy.command.builtin.ServerCommand;
 import com.velocitypowered.proxy.command.builtin.ShowAllCommand;
 import com.velocitypowered.proxy.command.builtin.ShutdownCommand;
 import com.velocitypowered.proxy.command.builtin.VelocityCommand;
@@ -236,14 +231,14 @@ public class VelocityServer implements ProxyServer, ForwardingAudience {
     // Initialize commands first
     commandManager.register(VelocityCommand.create(this));
     commandManager.register(CallbackCommand.create());
-    commandManager.register(ServerCommand.create(this));
+    //commandManager.register(ServerCommand.create(this));
     commandManager.register("shutdown", ShutdownCommand.command(this),
         "end", "stop");
-    new AlertCommand(this).register();
-    new AlertRawCommand(this).register();
-    new FindCommand(this).register();
+    //new AlertCommand(this).register();
+    //new AlertRawCommand(this).register();
+    //new FindCommand(this).register();
     new GlistCommand(this).register();
-    new PingCommand(this).register();
+    //new PingCommand(this).register();
     new SendCommand(this).register();
     new ShowAllCommand(this).register();
     commandManager.register("hub", new HubCommand(this).register(), "lobby");
