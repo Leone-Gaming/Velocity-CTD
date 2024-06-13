@@ -23,6 +23,7 @@ import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.gson.JsonObject;
@@ -54,6 +55,7 @@ import com.velocitypowered.api.proxy.messages.PluginMessageEncoder;
 import com.velocitypowered.api.proxy.player.PlayerSettings;
 import com.velocitypowered.api.proxy.player.ResourcePackInfo;
 import com.velocitypowered.api.proxy.server.RegisteredServer;
+import com.velocitypowered.api.proxy.util.ServerLink;
 import com.velocitypowered.api.util.GameProfile;
 import com.velocitypowered.api.util.ModInfo;
 import com.velocitypowered.proxy.VelocityServer;
@@ -83,6 +85,7 @@ import com.velocitypowered.proxy.protocol.packet.chat.ComponentHolder;
 import com.velocitypowered.proxy.protocol.packet.chat.PlayerChatCompletionPacket;
 import com.velocitypowered.proxy.protocol.packet.chat.builder.ChatBuilderFactory;
 import com.velocitypowered.proxy.protocol.packet.chat.legacy.LegacyChatPacket;
+import com.velocitypowered.proxy.protocol.packet.config.ClientboundServerLinksPacket;
 import com.velocitypowered.proxy.protocol.packet.config.StartUpdatePacket;
 import com.velocitypowered.proxy.protocol.packet.title.GenericTitlePacket;
 import com.velocitypowered.proxy.protocol.util.ByteBufDataOutput;
@@ -1144,6 +1147,22 @@ public class ConnectedPlayer implements MinecraftConnectionAssociation, Player, 
             connection.write(new ClientboundCookieRequestPacket(resultedKey));
           }
         }, connection.eventLoop());
+  }
+
+  @Override
+  public void setServerLinks(final @NotNull List<ServerLink> links) {
+    Preconditions.checkNotNull(links, "links");
+    Preconditions.checkArgument(
+            this.getProtocolVersion().noLessThan(ProtocolVersion.MINECRAFT_1_21),
+            "Player version must be at least 1.21 to be able to set server links");
+
+    if (connection.getState() != StateRegistry.PLAY
+            && connection.getState() != StateRegistry.CONFIG) {
+      throw new IllegalStateException("Can only send server links in CONFIGURATION or PLAY protocol");
+    }
+
+    connection.write(new ClientboundServerLinksPacket(ImmutableList.copyOf(links).stream()
+        .map(l -> new ClientboundServerLinksPacket.ServerLink(l, getProtocolVersion())).toList()));
   }
 
   @Override
