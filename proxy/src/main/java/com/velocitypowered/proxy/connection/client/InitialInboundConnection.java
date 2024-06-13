@@ -102,7 +102,7 @@ public final class InitialInboundConnection implements VelocityInboundConnection
     Component translated = GlobalTranslator.render(reason, ClosestLocaleMatcher.INSTANCE
         .lookupClosest(Locale.getDefault()));
     if (connection.server.getConfiguration().isLogOfflineConnections()
-                && connection.server.getConfiguration().isLogMinimumVersion()) {
+        && connection.server.getConfiguration().isLogMinimumVersion()) {
 
       if (connection.server.getConfiguration().isLogPlayerDisconnections()) {
         logger.info(Component.text(this + " has disconnected: ").append(translated));

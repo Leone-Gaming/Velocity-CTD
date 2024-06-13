@@ -44,6 +44,8 @@ import com.velocitypowered.proxy.protocol.packet.PluginMessagePacket;
 import com.velocitypowered.proxy.protocol.packet.ResourcePackRequestPacket;
 import com.velocitypowered.proxy.protocol.packet.ResourcePackResponsePacket;
 import com.velocitypowered.proxy.protocol.packet.TransferPacket;
+import com.velocitypowered.proxy.protocol.packet.config.ClientboundCustomReportDetailsPacket;
+import com.velocitypowered.proxy.protocol.packet.config.ClientboundServerLinksPacket;
 import com.velocitypowered.proxy.protocol.packet.config.FinishedUpdatePacket;
 import com.velocitypowered.proxy.protocol.packet.config.RegistrySyncPacket;
 import com.velocitypowered.proxy.protocol.packet.config.StartUpdatePacket;
@@ -125,6 +127,18 @@ public class ConfigSessionHandler implements MinecraftSessionHandler {
   }
 
   @Override
+  public boolean handle(ClientboundCustomReportDetailsPacket packet) {
+    serverConn.getPlayer().getConnection().write(packet);
+    return true;
+  }
+
+  @Override
+  public boolean handle(ClientboundServerLinksPacket packet) {
+    serverConn.getPlayer().getConnection().write(packet);
+    return true;
+  }
+
+  @Override
   public boolean handle(KeepAlivePacket packet) {
     if (serverConn.isActive()) {
       serverConn.ensureConnected().write(packet);
@@ -198,6 +212,12 @@ public class ConfigSessionHandler implements MinecraftSessionHandler {
     }
     MinecraftConnection smc = serverConn.ensureConnected();
     ConnectedPlayer player = serverConn.getPlayer();
+
+    if (!(player.getConnection().getActiveSessionHandler() instanceof ClientConfigSessionHandler)) {
+      logger.error("Player hasn't established a full connection yet.");
+      return false;
+    }
+
     ClientConfigSessionHandler configHandler =
         (ClientConfigSessionHandler) player.getConnection().getActiveSessionHandler();
 

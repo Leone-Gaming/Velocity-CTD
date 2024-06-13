@@ -291,6 +291,7 @@ public class VelocityServer implements ProxyServer, ForwardingAudience {
   }
 
   private void registerTranslations(boolean log) {
+    final String defaultFile = "messages.properties";
     final TranslationRegistry translationRegistry = new VelocityTranslationRegistry(TranslationRegistry.create(this.translationRegistryKey));
     translationRegistry.defaultLocale(Locale.US);
     try {
@@ -301,58 +302,68 @@ public class VelocityServer implements ProxyServer, ForwardingAudience {
 
         final Path langPath = Path.of("lang");
 
-        try {
+        try (final Stream<Path> files = Files.walk(path)) {
           if (!Files.exists(langPath)) {
             Files.createDirectory(langPath);
-            try (final Stream<Path> files = Files.walk(path)) {
-              files.filter(Files::isRegularFile).forEach(file -> {
-                try {
-                  final Path langFile = langPath.resolve(file.getFileName().toString());
-                  if (!Files.exists(langFile)) {
-                    try (final InputStream is = Files.newInputStream(file)) {
-                      Files.copy(is, langFile);
-                    }
-                  }
-                } catch (IOException e) {
-                  logger.error("Encountered an I/O error whilst loading translations", e);
-                }
-              });
-            }
-          }
 
-          try (final Stream<Path> files = Files.walk(langPath)) {
             files.filter(Files::isRegularFile).forEach(file -> {
-              final String filename = com.google.common.io.Files
-                      .getNameWithoutExtension(file.getFileName().toString());
-              final String localeName = filename.replace("messages_", "")
-                      .replace("messages", "")
-                      .replace('_', '-');
-              final Locale locale = localeName.isBlank()
-                      ? Locale.US
-                      : Locale.forLanguageTag(localeName);
-
-              try (final BufferedReader reader = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {
-                final ResourceBundle bundle = new PropertyResourceBundle(reader);
-                final Set<String> keys = bundle.keySet();
-
-                for (final String key : keys) {
-                  translationRegistry.unregister(key);
-
-                  final String format = bundle.getString(key);
-                  final String escapedFormat = format.replace("'", "''");
-                  final MessageFormat messageFormat = new MessageFormat(escapedFormat, locale);
-
-                  translationRegistry.register(key, locale, messageFormat);
+              try {
+                final Path langFile = langPath.resolve(file.getFileName().toString());
+                if (!Files.exists(langFile)) {
+                  try (final InputStream is = Files.newInputStream(file)) {
+                    Files.copy(is, langFile);
+                  }
                 }
-              } catch (final IOException ignored) {
-                //ignored
+              } catch (IOException e) {
+                logger.error("Encountered an I/O error whilst loading translations", e);
               }
-              ClosestLocaleMatcher.INSTANCE.registerKnown(locale);
             });
           }
 
-        } catch (IOException e) {
-          logger.error("Encountered an I/O error whilst loading translations", e);
+          final Optional<Path> optionalPath = files.filter(temp -> temp.toString().endsWith(defaultFile)).findFirst();
+
+          if (optionalPath.isEmpty()) {
+            logger.error("Failed to read default file, make a ticket @ discord.gg/beer (default file is missing)");
+            return;
+          }
+
+          try (final BufferedReader defaultReader = Files.newBufferedReader(optionalPath.get(), StandardCharsets.UTF_8)) {
+            final ResourceBundle defaultBundle = new PropertyResourceBundle(defaultReader);
+            final Set<String> defaultKeys = defaultBundle.keySet();
+
+            try (final Stream<Path> langFiles = Files.walk(langPath)) {
+              langFiles.filter(Files::isRegularFile).forEach(file -> {
+                final String filename = com.google.common.io.Files
+                    .getNameWithoutExtension(file.getFileName().toString());
+                final String localeName = filename.replace("messages_", "")
+                    .replace("messages", "")
+                    .replace('_', '-');
+                final Locale locale = localeName.isBlank()
+                                      ? Locale.US
+                                      : Locale.forLanguageTag(localeName);
+
+                try (final BufferedReader reader = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {
+                  final ResourceBundle bundle = new PropertyResourceBundle(reader);
+
+                  translationRegistry.registerAll(locale, defaultKeys, (key) -> {
+                    final String format = bundle.containsKey(key) ? bundle.getString(key) : defaultBundle.getString(key);
+                    final String escapedFormat = format.replace("'", "''");
+                    final MessageFormat messageFormat = new MessageFormat(escapedFormat, locale);
+
+                    return messageFormat;
+                  });
+
+                  ClosestLocaleMatcher.INSTANCE.registerKnown(locale);
+                } catch (Exception e) {
+                  logger.error("Could not read language file: " + filename, e);
+                }
+              });
+            } catch (Exception e) {
+              logger.error("Failed to read directory: " + path.toString(), e);
+            }
+          }
+        } catch (Exception e) {
+          logger.error("An unknown exception occurred.", e);
         }
       }, "com", "velocitypowered", "proxy", "l10n");
     } catch (IOException e) {

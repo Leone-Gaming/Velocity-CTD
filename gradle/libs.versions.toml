@@ -3,7 +3,7 @@ configurate3 = "3.7.3"
 configurate4 = "4.1.2"
 flare = "2.0.1"
 log4j = "2.23.1"
-netty = "4.1.110.Final"
+netty = "4.1.111.Final"
 netty-io_uring = "0.0.25.Final"
 
 [plugins]
@@ -13,15 +13,15 @@ spotless = "com.diffplug.spotless:6.25.0"
 
 [libraries]
 adventure-bom = "net.kyori:adventure-bom:4.17.0"
-adventure-facet = "net.kyori:adventure-platform-facet:4.3.2"
+adventure-facet = "net.kyori:adventure-platform-facet:4.3.3"
 asm = "org.ow2.asm:asm:9.7"
 auto-service = "com.google.auto.service:auto-service:1.1.1"
 auto-service-annotations = "com.google.auto.service:auto-service-annotations:1.1.1"
 brigadier = "com.velocitypowered:velocity-brigadier:1.0.0-SNAPSHOT"
 bstats = "org.bstats:bstats-base:3.0.2"
 caffeine = "com.github.ben-manes.caffeine:caffeine:3.1.8"
-checker-qual = "org.checkerframework:checker-qual:3.43.0"
-checkstyle = "com.puppycrawl.tools:checkstyle:10.15.0"
+checker-qual = "org.checkerframework:checker-qual:3.44.0"
+checkstyle = "com.puppycrawl.tools:checkstyle:10.17.0"
 completablefutures = "com.spotify:completable-futures:0.3.6"
 configurate3-hocon = { module = "org.spongepowered:configurate-hocon", version.ref = "configurate3" }
 configurate3-yaml = { module = "org.spongepowered:configurate-yaml", version.ref = "configurate3" }
@@ -29,7 +29,7 @@ configurate3-gson = { module = "org.spongepowered:configurate-gson", version.ref
 configurate4-hocon = { module = "org.spongepowered:configurate-hocon", version.ref = "configurate4" }
 configurate4-yaml = { module = "org.spongepowered:configurate-yaml", version.ref = "configurate4" }
 configurate4-gson = { module = "org.spongepowered:configurate-gson", version.ref = "configurate4" }
-disruptor = "com.lmax:disruptor:3.4.4"
+disruptor = "com.lmax:disruptor:4.0.0"
 fastutil = "it.unimi.dsi:fastutil:8.5.13"
 flare-core = { module = "space.vectrix.flare:flare", version.ref = "flare" }
 flare-fastutil = { module = "space.vectrix.flare:flare-fastutil", version.ref = "flare" }
@@ -38,7 +38,7 @@ jopt = "net.sf.jopt-simple:jopt-simple:5.0.4"
 junit = "org.junit.jupiter:junit-jupiter:5.10.2"
 jspecify = "org.jspecify:jspecify:0.3.0"
 kyori-ansi = "net.kyori:ansi:1.0.3"
-guava = "com.google.guava:guava:33.2.0-jre"
+guava = "com.google.guava:guava:33.2.1-jre"
 gson = "com.google.code.gson:gson:2.11.0"
 guice = "com.google.inject:guice:6.0.0"
 lmbda = "org.lanternpowered:lmbda:2.0.0"
