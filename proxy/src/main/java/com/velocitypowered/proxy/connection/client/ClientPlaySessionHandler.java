@@ -28,6 +28,7 @@ import com.velocitypowered.api.event.player.CookieReceiveEvent;
 import com.velocitypowered.api.event.player.PlayerChannelRegisterEvent;
 import com.velocitypowered.api.event.player.PlayerClientBrandEvent;
 import com.velocitypowered.api.event.player.TabCompleteEvent;
+import com.velocitypowered.api.event.player.configuration.PlayerEnteredConfigurationEvent;
 import com.velocitypowered.api.network.ProtocolVersion;
 import com.velocitypowered.api.proxy.messages.ChannelIdentifier;
 import com.velocitypowered.api.proxy.messages.LegacyChannelIdentifier;
@@ -54,6 +55,7 @@ import com.velocitypowered.proxy.protocol.packet.ServerboundCookieResponsePacket
 import com.velocitypowered.proxy.protocol.packet.TabCompleteRequestPacket;
 import com.velocitypowered.proxy.protocol.packet.TabCompleteResponsePacket;
 import com.velocitypowered.proxy.protocol.packet.TabCompleteResponsePacket.Offer;
+import com.velocitypowered.proxy.protocol.packet.chat.ChatAcknowledgementPacket;
 import com.velocitypowered.proxy.protocol.packet.chat.ChatHandler;
 import com.velocitypowered.proxy.protocol.packet.chat.ChatTimeKeeper;
 import com.velocitypowered.proxy.protocol.packet.chat.CommandHandler;
@@ -85,7 +87,6 @@ import java.util.Queue;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.TimeUnit;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -100,7 +101,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 public class ClientPlaySessionHandler implements MinecraftSessionHandler {
 
   private static final Logger logger = LogManager.getLogger(ClientPlaySessionHandler.class);
-  private static final int MAX_STORED_LOGIN_PLUGIN_MESSAGES = 16384; // arbitrary choice
+  private static final int MAX_STORED_LOGIN_PLUGIN_MESSAGES = 16384;
 
   private final ConnectedPlayer player;
   private boolean spawned = false;
@@ -179,17 +180,7 @@ public class ClientPlaySessionHandler implements MinecraftSessionHandler {
 
   @Override
   public boolean handle(KeepAlivePacket packet) {
-    final VelocityServerConnection serverConnection = player.getConnectedServer();
-    if (serverConnection != null) {
-      final Long sentTime = serverConnection.getPendingPings().remove(packet.getRandomId());
-      if (sentTime != null) {
-        final MinecraftConnection smc = serverConnection.getConnection();
-        if (smc != null && !smc.isClosed()) {
-          player.setPing(TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - sentTime));
-          smc.write(packet);
-        }
-      }
-    }
+    player.forwardKeepAlive(packet);
     return true;
   }
 
@@ -416,6 +407,7 @@ public class ClientPlaySessionHandler implements MinecraftSessionHandler {
     // Complete client switch
     player.getConnection().setActiveSessionHandler(StateRegistry.CONFIG);
     VelocityServerConnection serverConnection = player.getConnectedServer();
+    server.getEventManager().fireAndForget(new PlayerEnteredConfigurationEvent(player, serverConnection));
     if (serverConnection != null) {
       MinecraftConnection smc = serverConnection.ensureConnected();
       CompletableFuture.runAsync(() -> {
@@ -428,6 +420,15 @@ public class ClientPlaySessionHandler implements MinecraftSessionHandler {
       });
     }
     configSwitchFuture.complete(null);
+    return true;
+  }
+
+  @Override
+  public boolean handle(ChatAcknowledgementPacket packet) {
+    if (player.getCurrentServer().isEmpty()) {
+      return true;
+    }
+    player.getChatQueue().handleAcknowledgement(packet.offset());
     return true;
   }
 
@@ -522,7 +523,7 @@ public class ClientPlaySessionHandler implements MinecraftSessionHandler {
    * @return a future that completes when the switch is complete
    */
   public CompletableFuture<Void> doSwitch() {
-    VelocityServerConnection existingConnection = player.getConnectedServer();
+    final VelocityServerConnection existingConnection = player.getConnectedServer();
 
     if (existingConnection != null) {
       // Shut down the existing server connection.

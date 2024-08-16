@@ -22,6 +22,7 @@ import com.velocitypowered.api.proxy.server.RegisteredServer;
 import com.velocitypowered.api.proxy.util.ServerLink;
 import com.velocitypowered.api.util.GameProfile;
 import com.velocitypowered.api.util.ModInfo;
+import com.velocitypowered.api.util.ServerLink;
 import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.List;
